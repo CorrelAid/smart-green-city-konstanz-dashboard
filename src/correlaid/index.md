@@ -62,12 +62,12 @@ view(plt);
 
 </div> <!-- card -->
 
-
+<!-- BEGINN KARTE -->
 ### Temperaturverlauf am 31. Juli 2024
 
 ```js
-const stationen = FileAttachment("stationen.geo.json").json()
-const tagesverlauf = FileAttachment('./tagesverlauf.csv').csv({typed: true})
+const stationen = FileAttachment("Karte_Messstationen/stationen_update.geo.json").json()
+const tagesverlauf = FileAttachment('Karte_Messstationen/tagesverlauf.csv').csv({typed: true})
 ```
 
 ```js
@@ -83,11 +83,13 @@ const map_div = document.createElement("div");
 map_div.style = "height:25rem";
 display(map_div)
 ```
+<!-- ENDE KARTE -->
 
+<!-- BEGINN Stunden-Cursor für Linienplot -->
 ```js
 const stunde = view(Inputs.range([0, 23], {step: 1, label: "Stunde"}));
 ```
-
+<!-- BEGINN LINIENPLOT -->
 <div class="card">
   <h2>Temperatur</h2>
   <h3>Tagesverlauf an verschiedenen SGC Wetterstationen in Konstanz</h3>

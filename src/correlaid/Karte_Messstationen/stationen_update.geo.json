@@ -126,13 +126,13 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          9.183485,
-          47.688727
+          9.17386062,
+          47.66186644
         ]
       },
       "properties": {
-        "name": "Uni Eichbergstraße",
-        "entity_id": "urn:ngsi-ld:WeatherObserved:wintersense-107381",
+        "name": "Stephansplatz",
+        "entity_id": "urn:ngsi-ld:WeatherObserved:eui-8cf95720000d2f46-sn24020757",
         "entity_type": "WeatherObserved"
       }
     },
@@ -171,13 +171,13 @@
       "geometry": {
         "type": "Point",
         "coordinates": [
-          9.174062,
-          47.668392
+          9.173416,
+          47.666969
         ]
       },
       "properties": {
-        "name": "Herose Fahrradbrücke",
-        "entity_id": "urn:ngsi-ld:WeatherObserved:wintersense-107383",
+        "name": "Bodanplatz",
+        "entity_id": "urn:ngsi-ld:WeatherObserved:eui-8cf95720000d344d-sn24020756",
         "entity_type": "WeatherObserved"
       }
     }
