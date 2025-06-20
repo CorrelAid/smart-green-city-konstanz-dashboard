@@ -32,10 +32,13 @@ In der folgenden Grafik kannst du nicht nur sehen, wie sich die Temperatur seit 
 _Trage ein, in welchem Jahr du nach Konstanz gezogen bist – wir zeigen dir den damaligen Standpunkt in der Temperaturkurve._
 
 ```js
+import drawWeatherTrend from "./charts/chart1_weather_trend.js";
+
 // Was wollt ihr hier für Daten nutzen? Eine Idee wäre, die Jahreswerte aus dem DWD Dashboard wiederzuverwenden.
 // Es gäbe dort auch noch 30-jährige gleitende Durchschnitte
-const yearly =  FileAttachment("../dwd/dwd/Jahreswerte.csv").csv({typed: true})
-// Diese Datei wird von ../../dwd/dwd.zip.py erstellt. Das Python Skript bündelt meherere Dateien in ein ZIP-Archiv (u.a. Jahreswerte.csv);
+const yearly = FileAttachment("../dwd/dwd/Jahreswerte.csv").csv({typed: true})
+
+// Diese Datei wird von ../../dwd/dwd.zip.py erstellt. Das Python Skript bündelt mehrere Dateien in ein ZIP-Archiv (u.a. Jahreswerte.csv);
 // Observable Framework stellt diese dann einzeln oder gebündelt zum Download bereit.
 ```
 
@@ -43,40 +46,17 @@ const yearly =  FileAttachment("../dwd/dwd/Jahreswerte.csv").csv({typed: true})
 const years = yearly.map(row => row['Jahr'])
 const minYear = Math.min(...years)
 const maxYear = Math.max(...years)
-// Das wächst automatisch mit, wenn sich die Daten im DWD Dashboard aktualisieren
-
-const arrival = view(Inputs.range([minYear, maxYear], {step: 1}));
 ```
 
-<div class="card">
-  <h2>Temperatur</h2>
-  <h3>Jahresdurchschnitt in Konstanz, DWD Station Konstanz</h3>
+```js
+// Das wächst automatisch mit, wenn sich die Daten im DWD Dashboard aktualisieren
+const arrival_input = Inputs.range([minYear, maxYear], {step: 1});
+const arrival = view(arrival_input);
+```
 
 ```js
-const plt = Plot.plot({
-  grid: true, // Konsistent mit Dashboards
-  inset: 10, // Konsistent mit Dashboards
-  x: {
-    label: "Jahr",
-    labelAnchor: 'center',
-    labelArrow: 'none',
-    tickFormat: JSON.stringify, // suppress delimiting dots, e.g. 2.024
-  },
-  y: {
-    label: "℃"
-  },
-  marks: [
-    Plot.line(yearly, {
-      x: "Jahr",
-      y: "Temperatur_Celsius_Mittel_Tagesdurchschnitt",
-      stroke: () => 'constant', // trick to use the first color of the theme
-    }),
-    Plot.ruleX([arrival], {
-      stroke: 'var(--theme-foreground-focus)', // use focus color defined by theme
-    }),
-  ]
-});
-view(plt);
+display(arrival_input); // Slider anzeigen
+view(drawWeatherTrend(yearly, arrival));
 ```
 
 </div> <!-- card -->
