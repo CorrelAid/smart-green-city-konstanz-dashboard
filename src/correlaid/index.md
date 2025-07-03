@@ -109,7 +109,7 @@ Stationen war_
 NEU:
 
 ```js
-import {TemperaturWidget} from "./Karte_Messstationen/Temperaturvergleich.js"
+import { TemperaturWidget } from "./Karte_Messstationen/temperaturvergleich.js"
 view(await TemperaturWidget())
 ```
 ALT:
