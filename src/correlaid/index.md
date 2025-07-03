@@ -31,6 +31,8 @@ In der folgenden Grafik kannst du nicht nur sehen, wie sich die Temperatur seit 
 🟢 **[Interaktivität]**  
 _Trage ein, in welchem Jahr du nach Konstanz gezogen bist – wir zeigen dir den damaligen Standpunkt in der Temperaturkurve._
 
+
+<!-- get data for chart 1 -> Should perhaps also be outsourced in chart1_weather_trens.js-->
 ```js
 // Was wollt ihr hier für Daten nutzen? Eine Idee wäre, die Jahreswerte aus dem DWD Dashboard wiederzuverwenden.
 // Es gäbe dort auch noch 30-jährige gleitende Durchschnitte
@@ -44,55 +46,32 @@ const years = yearly.map(row => row['Jahr'])
 const minYear = Math.min(...years)
 const maxYear = Math.max(...years)
 // Das wächst automatisch mit, wenn sich die Daten im DWD Dashboard aktualisieren
-
 const arrival = view(Inputs.range([minYear, maxYear], {step: 1}));
 ```
 
+<!-- Display Chart 1 in a card-->
 <div class="card">
   <h2>Temperatur</h2>
   <h3>Jahresdurchschnitt in Konstanz, DWD Station Konstanz</h3>
-
-```js
-const plt = Plot.plot({
-  grid: true, // Konsistent mit Dashboards
-  inset: 10, // Konsistent mit Dashboards
-  x: {
-    label: "Jahr",
-    labelAnchor: 'center',
-    labelArrow: 'none',
-    tickFormat: JSON.stringify, // suppress delimiting dots, e.g. 2.024
-  },
-  y: {
-    label: "℃"
-  },
-  marks: [
-    Plot.line(yearly, {
-      x: "Jahr",
-      y: "Temperatur_Celsius_Mittel_Tagesdurchschnitt",
-      stroke: () => 'constant', // trick to use the first color of the theme
-    }),
-    Plot.ruleX([arrival], {
-      stroke: 'var(--theme-foreground-focus)', // use focus color defined by theme
-    }),
-  ]
-});
-view(plt);
-```
 
 ```js
 import drawWeatherTrend from "./charts/chart1_weather_trends.js";
 
 view(drawWeatherTrend(yearly, arrival));
 ``` 
-
-
 </div> <!-- card -->
+
+
 
 Tipp: Schau dir an, wie groß der Unterschied zwischen deinem Zuzugsjahr 
 und heute ist. Das fühlt sich plötzlich gar nicht mehr so abstrakt an, oder?
 
 ---
 
+<!-- Vorgehen Maja: 
+        - Daten laden bleibt hier im Notebook
+        - UI-Inputs bleibt hier im Notebook - Slider, Radiobuttons
+        - ausgelagter - Visualisierung - Diagramm und Karte ertellen und Karte updaten-->
 ## Teil 2: Eine Stadt, viele Klimas
 Es gibt Tage, da fühlt sich Konstanz an wie zwei verschiedene Städte: Wäh-
 rend es in der Innenstadt heiß und stickig ist, ist es im Herose-Park oder am 
@@ -115,33 +94,37 @@ Stationen war_
 
 ### Temperaturverlauf am 31. Juli 2024
 
+<!-- get data for chart2 -->
 ```js
 const stationen = FileAttachment("stationen.geo.json").json()
 const tagesverlauf = FileAttachment('./tagesverlauf.csv').csv({typed: true})
 ```
 
+<!-- UI-Inputs chart2 -->
 ```js
 const stationsnamen = stationen.features.map(f => f.properties.name);
 const station_input = Inputs.radio(stationsnamen, {value: stationsnamen[7]});
 // const station_input = Mutable(stationsnamen[7]); // ohne Radio Buttons
+const stunde_input = Inputs.range([0, 23], {step: 1, label: "Stunde"});
 
 const station = view(station_input);
+const stunde = view(stunde_input)
 ```
+
+
 
 ```js
 const map_div = document.createElement("div");
 map_div.style = "height:25rem";
-display(map_div)
+//display(map_div)
 ```
 
-```js
-const stunde = view(Inputs.range([0, 23], {step: 1, label: "Stunde"}));
-```
 
 <div class="card">
   <h2>Temperatur</h2>
   <h3>Tagesverlauf an verschiedenen SGC Wetterstationen in Konstanz</h3>
 
+<!--
 ```js
 const plt = Plot.plot({
   grid: true, // Konsistent mit Dashboards
@@ -173,8 +156,11 @@ const plt = Plot.plot({
 view(plt);
 ```
 
-</div> <!-- card -->
+</div> --> 
+<!-- card -->
 
+
+<!--
 ```js
 // Die Karte wurde oben bereits ins HTML / DOM eingebettet. Hier wird sie befüllt.
 
@@ -233,10 +219,12 @@ function paintPoints(selectedStation) {
 };
 ```
 
+
 ```js display=false
 // This block is re-evaluated whenever the input 'station' changes.
 paintPoints(station);
 ```
+-->
 Du wirst sehen: Manche Stationen steigen schon am frühen Morgen stark 
 an, andere bleiben lange kühl. 
 
@@ -249,6 +237,18 @@ ein Ort im Laufe des Tages aufheizt oder abkühlt.
 Und das hat Folgen: Für dein persönliches Wohlbefinden, aber auch für die 
 Gesundheit älterer Menschen, die Planung von Spielplätzen, Fahrradwegen 
 oder Schulhöfen
+
+```js
+import L from "leaflet@1";
+import { createSensorMap, updateSensorMap, createSensorLineChart } from "./charts/chart2_sensor_map.js";
+
+
+const map = createSensorMap(map_div, stationen, station_input);
+updateSensorMap(map, stationen, station, station_input);
+view(createSensorLineChart(tagesverlauf, stationsnamen, stunde));
+
+``` 
+
 
 ---
 
