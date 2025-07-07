@@ -239,7 +239,6 @@ Gesundheit älterer Menschen, die Planung von Spielplätzen, Fahrradwegen
 oder Schulhöfen
 
 ```js
-import L from "leaflet@1";
 import { createSensorMap, updateSensorMap, createSensorLineChart } from "./charts/chart2_sensor_map.js";
 
 

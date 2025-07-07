@@ -1,5 +1,5 @@
 import * as Plot from "npm:@observablehq/plot";
-//import L from "leaflet@1"
+import L from "npm:leaflet";
 
 // Goals 
 //      -> Karte und Liniendiagramm nebeneinander darstellen -> dafür muss der Darstellungsbereich am Computer breiter werde
