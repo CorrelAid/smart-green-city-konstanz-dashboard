@@ -119,6 +119,15 @@ map_div.style = "height:25rem";
 //display(map_div)
 ```
 
+```js
+import { createSensorMap, updateSensorMap, createSensorLineChart } from "./charts/chart2_sensor_map.js";
+
+
+const map = createSensorMap(map_div, stationen, station_input);
+updateSensorMap(map, stationen, station, station_input);
+view(createSensorLineChart(tagesverlauf, stationsnamen, stunde));
+
+``` 
 
 <div class="card">
   <h2>Temperatur</h2>
@@ -238,15 +247,6 @@ Und das hat Folgen: Für dein persönliches Wohlbefinden, aber auch für die
 Gesundheit älterer Menschen, die Planung von Spielplätzen, Fahrradwegen 
 oder Schulhöfen
 
-```js
-import { createSensorMap, updateSensorMap, createSensorLineChart } from "./charts/chart2_sensor_map.js";
-
-
-const map = createSensorMap(map_div, stationen, station_input);
-updateSensorMap(map, stationen, station, station_input);
-view(createSensorLineChart(tagesverlauf, stationsnamen, stunde));
-
-``` 
 
 
 ---
