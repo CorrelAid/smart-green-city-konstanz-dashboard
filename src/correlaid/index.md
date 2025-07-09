@@ -114,7 +114,7 @@ const station_input = Inputs.radio(stationsnamen, {value: stationsnamen[7]});
 // durch Mutable wird station_input.value automatisch reaktiv
 //const station_input = Mutable(stationsnamen[7]);
 
-const station = view(station_input);
+//const station = station_input;
 
 // Uhrzeit-Slider
 const stunde = Inputs.range([0, 23], {step: 1, label: "Stunde"});
@@ -153,8 +153,9 @@ const sensor_plt = createReactiveSensorChart(tagesverlauf, station_input, stunde
   </div>
 
   <div class="body">
+    ${view(station_input)}
+    <br/>
     ${map_div}
-  
   </div>
 </div> 
 <!-- Ende Card - Map -->
@@ -190,7 +191,7 @@ const map = createSensorMap(map_div, stationen, station_input);
 ```js display=false
 // This block is re-evaluated whenever the input 'station' changes.
 // ausgelagert in charts/chart2_sensor_map.js
-updateSensorMap(map, stationen, station, station_input, tagesverlauf, stunde.value);
+updateSensorMap(map, stationen, station_input.value, station_input, tagesverlauf, stunde.value);
 ```
 
 ```js

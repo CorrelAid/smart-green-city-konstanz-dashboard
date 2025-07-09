@@ -213,6 +213,7 @@ export function getMarkerStyleWithDeviation(deviation) {
  * @returns {L.CircleMarker} - Der fertige Marker.
  */
 function createStationMarker(feature, latlng, selectedStation, station_input, map, stationen, deviation) {
+    console.log(selectedStation)
     const isSelected = feature.properties.name === selectedStation;
 
     // Hole beide Styles
@@ -286,6 +287,7 @@ function getDeviationForStation(stationName, hour, tagesverlauf) {
  * @param {number} currentHour - Aktuell ausgewählte Stunde (0–23)
  */
 export function updateSensorMap(map, stationen, selectedStation, station_input, tagesverlauf, currentHour) {
+    console.log(selectedStation);
     // Entferne alle bestehenden Marker (Layer), behalte nur den TileLayer
     clearMapMarkers(map);
 
