@@ -8,12 +8,11 @@ import { html } from "htl";
 // =====================
 const MAP_RADIUS_M = 50;            // 50 m Kreis
 const MAP_DIAMETER = 350;           // Kreisgröße auf der Karte (px)
-const MAP_ZOOM = 18;
-const HEAT_H = 40;            // Höhe inkl. Zahlen
-const HEAT_MIN_W = 320;           // Sicherheitsminimum Heatmap-Breite
+const MAP_ZOOM = 18.48;
+const HEAT_H = 40;                  // Höhe inkl. Zahlen
+const HEAT_MIN_W = 320;             // Sicherheitsminimum Heatmap-Breite
 
-const KPI_COLOR = "#8B0000";     // dunkelrot für KPI-Werte
-const CANOPY_COLOR = "#008000ff";   // Baumkronen-Fortschrittsleiste
+const TREE_COLOR = "#008000ff";     // Farbe für Baumkronen-Fortschrittsleiste
 
 // Kategorien (Kies = unversiegelt) – mit deinen Farben
 const flaechenKategorien = [
@@ -24,22 +23,14 @@ const flaechenKategorien = [
     { key: "wasser_%", label: "Wasser", color: "#5a8ebfff", group: "unversiegelt" }
 ];
 
-const canopyKeys = ["baeume_%", "baumkronen_%", "baumkronenflaeche_%"];
+// Schlüssel für Baum-/Baumkronen-Anteile (tree statt canopy)
+const treeKeys = ["baeume_%", "baumkronen_%", "baumkronenflaeche_%"];
 const maxTempKeys = ["Hottest_Day"];     // deine Spaltennamen
 const hotDaysKeys = ["Hot_Days_Count"];
 
 // =====================
 // Öffentliche API
 // =====================
-/**
- * host           : <div> aus index.md
- * stationMeta    : CSV mit Flächenanteilen & Koordinaten
- * heatmapData    : { name -> [24 Abweichungen] }
- * hotData        : CSV mit KPIs
- * leftSelect     : Inputs.select
- * rightSelect    : Inputs.select
- * stationTexts   : optionales Objekt { "Stationsname": "Text ..." }
- */
 export function createStationComparison({
     host,
     stationMeta,
@@ -49,7 +40,7 @@ export function createStationComparison({
     rightSelect,
     stationTexts = {}
 }) {
-    // Grid mit kleinem Spaltenabstand
+    // Grid-Layout für die zwei Kartenkarten (linke/rechte Seite)
     host.style.display = "grid";
     host.style.gridTemplateColumns = "minmax(0,1fr) minmax(0,1fr)";
     host.style.columnGap = "8px";
@@ -80,148 +71,155 @@ export function createStationComparison({
 // Card-Baustein
 // =====================
 function buildCard() {
+    // Karten-Card (äußerer Wrapper)
     const cardEl = document.createElement("div");
     cardEl.className = "card";
-    cardEl.setAttribute("style", [
-        "padding:16px",
-        "display:flex",
-        "flex-direction:column",
-        "gap:12px",
-        "width:100%",
-        "box-sizing:border-box"
-    ].join(";"));
 
-    // Titel
-    const titleEl = document.createElement("h2");
-    titleEl.setAttribute("style", "text-align:center;font-size:28px;font-weight:800;color:#111;margin:4px 0 2px 0;");
+    // Titel der Card
+    const titleEl = document.createElement("station_name");
+    titleEl.className = "station_name";
 
-    // Top-Zeile: Karte (links) + Steckbriefe (rechts)
+    // Top-Zeile: runde Karte (links) + Info-Boxen (rechts)
     const topRow = document.createElement("div");
-    topRow.setAttribute("style", `display:grid;grid-template-columns:${MAP_DIAMETER}px 1fr;column-gap:10px;align-items:start;`);
+    topRow.className = "grid-2";
+    topRow.style.gridTemplateColumns = `${MAP_DIAMETER}px 1fr`; // linke Spalte fest auf Kartendurchmesser
 
-    // Linke Spalte: runde Karte
+    // Runder Karten-Container
     const mapWrap = document.createElement("div");
-    mapWrap.setAttribute("style", [
-        `width:${MAP_DIAMETER}px`,
-        `height:${MAP_DIAMETER}px`,
-        "border-radius:50%",
-        "overflow:hidden",
-        "margin:0 auto",
-        "box-shadow:0 4px 8px rgba(0,0,0,.2)"
-    ].join(";"));
+    mapWrap.className = "map-round";
+    mapWrap.style.width = `${MAP_DIAMETER}px`;
+    mapWrap.style.height = `${MAP_DIAMETER}px`;
 
+    // Leaflet-Karte
     const map = L.map(mapWrap, {
-        zoomControl: false, attributionControl: false, dragging: false,
-        doubleClickZoom: false, scrollWheelZoom: false, boxZoom: false, keyboard: false
+        zoomControl: false,
+        attributionControl: false,
+        dragging: false,
+        doubleClickZoom: false,
+        scrollWheelZoom: false,
+        boxZoom: false,
+        keyboard: false,
+        zoomSnap: 0,
+        zoomDelta: 0.1,
+        maxZoom: 22,
+        zoom: MAP_ZOOM
     });
+
     L.tileLayer(
         "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}",
-        { attribution: "Tiles © Esri" }
+        { attribution: "Tiles © Esri", maxZoom: 22, maxNativeZoom: 19 }
     ).addTo(map);
     setTimeout(() => map.invalidateSize(), 0);
 
-    // Rechte Spalte: Überschriften ÜBER den Kästen, Kästen weiß + schwarzer Rahmen
+    // Rechte Spalte (Container für die Boxen)
     const rightCol = document.createElement("div");
-    rightCol.setAttribute("style", "display:flex;flex-direction:column;gap:8px;");
+    rightCol.style.display = "flex";
+    rightCol.style.flexDirection = "column";
+    rightCol.style.gap = "8px";
 
-    // Überschrift + Box 1: Oberflächen
-    const surfHdr = document.createElement("div");
+    // --- Box 1: Überschrift Oberflächen ---
+    const surfHdr = document.createElement("div");      // Überschrift der Box
+    surfHdr.className = "small-title";
     surfHdr.textContent = "Oberflächenbeschaffenheit im Umkreis von 50 m";
-    surfHdr.setAttribute("style", "font-size:14px;font-weight:800;margin:0 0 2px 0;");
 
-    const surfBox = document.createElement("div");
-    surfBox.setAttribute("style", "background:#fff;border:2px solid #000;border-radius:6px;padding:10px;");
-    const barsHost = document.createElement("div");
-    barsHost.setAttribute("style", "display:grid;grid-auto-rows:min-content;row-gap:8px;");
+    const surfBox = document.createElement("div");      // Inhaltliche Box (Rahmen/Hintergrund via CSS)
+    surfBox.className = "box";
+
+    const barsHost = document.createElement("div");     // Container für die Balkenliste
+    barsHost.className = "barlist";
     surfBox.appendChild(barsHost);
 
-    // Überschrift + Box 2: Baumkronen
-    const canopyHdr = document.createElement("div");
-    canopyHdr.textContent = "Beschattungsanteil durch Baumkronen im Sommer";
-    canopyHdr.setAttribute("style", "font-size:14px;font-weight:800;margin:0 0 2px 0;");
+    // --- Box 2: Überschrift Baumkronen/Tree ---
+    const treeHdr = document.createElement("div");      // Überschrift der Tree-Box
+    treeHdr.className = "small-title";
+    treeHdr.textContent = "Beschattungsanteil durch Baumkronen im Sommer";
 
-    const canopyBox = document.createElement("div");
-    canopyBox.setAttribute("style", "background:#fff;border:2px solid #000;border-radius:6px;padding:10px;");
+    const treeBox = document.createElement("div");      // Tree-Box (Rahmen/Hintergrund via CSS)
+    treeBox.className = "box";
 
-    const canopyRow = document.createElement("div");
-    canopyRow.setAttribute("style", "display:flex;align-items:center;gap:8px;");
+    const treeRow = document.createElement("div");      // Zeile: Label – Fortschrittsbalken – Prozent
+    treeRow.className = "barrow";
 
-    // Farbiges Quadrat
-    const canopySwatch = document.createElement("div");
-    canopySwatch.setAttribute("style", `width:14px;height:14px;background:${CANOPY_COLOR};
-    border:1px solid rgba(0,0,0,.2);border-radius:2px;`);
-
-    const canopyLabel = document.createElement("span");
-    canopyLabel.textContent = "Baumkronenfläche";
-    canopyLabel.setAttribute("style", "font-size:14px;");
-    const canopyBar = document.createElement("div");
-    canopyBar.setAttribute("style", "flex:1;height:14px;background:#e5e7eb;border-radius:9999px;position:relative;overflow:hidden;");
-    const canopyFill = document.createElement("div");
-    canopyFill.style.cssText = "height:14px;border-radius:9999px;position:absolute;left:0;top:0;width:0%;";
-    canopyFill.style.background = CANOPY_COLOR;
-    canopyBar.appendChild(canopyFill);
-    const canopyPct = document.createElement("span");
-    canopyPct.setAttribute("style", "font-size:14px;font-weight:700;");
-    canopyRow.append(canopyLabel, canopyBar, canopyPct);
-    //canopyRow.append(canopySwatch, canopyLabel, canopyBar, canopyPct);
-
-    canopyBox.appendChild(canopyRow);
+    const treeLabel = document.createElement("span");   // Label links
+    treeLabel.className = "barlabel";
+    treeLabel.textContent = "Baumkronenfläche";
 
 
-    rightCol.append(surfHdr, surfBox, canopyHdr, canopyBox);
+    const treeBar = document.createElement("div");      // Fortschrittsbalken außen
+    treeBar.className = "barouter";
+    treeBar.style.flex = "1";
+    treeBar.style.height = "14px";
+
+    const treeFill = document.createElement("div");     // Fortschrittsbalken Füllung
+    treeFill.className = "barvalue";
+    treeFill.style.height = "14px";
+    treeFill.style.background = TREE_COLOR;
+    treeFill.style.width = "0%";
+    treeBar.appendChild(treeFill);
+
+    const treePct = document.createElement("span");     // Prozentzahl rechts
+    treePct.style.fontSize = "14px";
+    treePct.style.fontWeight = "700";
+
+    treeRow.append(treeLabel, treeBar, treePct);
+    treeBox.appendChild(treeRow);
+
+    // Rechte Spalte zusammenbauen
+    rightCol.append(surfHdr, surfBox, treeHdr, treeBox);
+
+    // Top-Zeile zusammenbauen
     topRow.append(mapWrap, rightCol);
 
-    // --- Heatmap-Block: alles dicht beieinander ---
-    const heatBlock = document.createElement("div");
-    heatBlock.style.cssText = "display:flex;flex-direction:column;gap:2px;";
+    // --- Heatmap-Block (Titel, Erklärung, SVG, Achsenbeschriftung) ---
+    const heatBlock = document.createElement("div");    // Container Heatmap-Bereich
+    heatBlock.className = "heat-block";
 
-    const heatTitle = document.createElement("div");
+    const heatTitle = document.createElement("div");    // Heatmap-Titel
+    heatTitle.className = "heat-title";
     heatTitle.textContent = "Wie warm war es hier im Vergleich zu den anderen Stationen im Tagesverlauf?";
-    heatTitle.style.cssText = "font-size:16px;font-weight:800;color:#111;margin:0;";
 
-    const heatExplain = document.createElement("div");
+    const heatExplain = document.createElement("div");  // Heatmap-Erklärung
+    heatExplain.className = "heat-explain";
     heatExplain.textContent = "Tägliches Erwärmungsmuster – blau = kühler, rot = wärmer (Abweichung vom Mittel)";
-    heatExplain.style.cssText = "font-size:12px;color:#6b7280;margin:0;";
 
-    const heatSvg = d3.create("svg").attr("height", HEAT_H).node();
+    const heatSvg = d3.create("svg")                    // Heatmap-SVG selbst
+        .attr("height", HEAT_H)
+        .node();
 
-    const heatBottom = document.createElement("div");
+    const heatBottom = document.createElement("div");   // Achsenbeschriftung unten
+    heatBottom.className = "heat-bottom";
     heatBottom.textContent = "Uhrzeit [Stunden]";
-    heatBottom.style.cssText = "text-align:center;font-size:12px;font-weight:800;margin-top:2px;";
 
     heatBlock.append(heatTitle, heatExplain, heatSvg, heatBottom);
 
-    // KPI-Boxen
-    const kpiWrap = document.createElement("div");
-    kpiWrap.setAttribute("style", "display:grid;grid-template-columns:1fr 1fr;column-gap:10px;");
+    // --- KPI-Boxen (zwei Spalten) ---
+    const kpiWrap = document.createElement("div");      // Grid für zwei KPI-Boxen
+    kpiWrap.className = "grid-2";
+    kpiWrap.style.gridTemplateColumns = "1fr 1fr";
 
-    const kpi1 = mkKpiBox("Maximaltemperatur (2024)");
-    const kpi2 = mkKpiBox("Anzahl heißer Tage (2024)");
+    const kpi1 = mkKpiBox("Maximaltemperatur (2024)");  // KPI 1
+    const kpi2 = mkKpiBox("Anzahl heißer Tage (2024)"); // KPI 2
     kpiWrap.append(kpi1.wrap, kpi2.wrap);
 
-    // Textbox unten (schwarzer Rahmen, weißer Hintergrund)
-    const textBox = document.createElement("div");
-    textBox.setAttribute("style", "background:#fff;border:2px solid #000;border-radius:6px;padding:10px;");
-    const textEl = document.createElement("div");
-    textEl.setAttribute("style", "font-size:14px;color:#111;");
+    // --- Freitext-Box unten ---
+    const textBox = document.createElement("div");      // Einheitliche Box-Optik
+    textBox.className = "box";
+    const textEl = document.createElement("div");       // Text-Inhalt
+    textEl.className = "station-text";
+    textEl.style.fontSize = "14px";
+    textEl.style.color = "#111";
     textBox.appendChild(textEl);
 
-    // Zusammenbauen
-    cardEl.append(
-        titleEl,
-        topRow,
-        heatBlock,
-        kpiWrap,
-        textBox
-    );
+    // Card zusammenbauen
+    cardEl.append(titleEl, topRow, heatBlock, kpiWrap, textBox);
 
     return {
         cardEl,
         titleEl,
         map,
         barsHost,
-        canopyFill,
-        canopyPct,
+        treeFill,
+        treePct,
         heatSvg,
         maxTempEl: kpi1.value,
         hotDaysEl: kpi2.value,
@@ -242,28 +240,27 @@ function renderSide(side, stationName, metaRows, heatmapData, hotRows, stationTe
     const meta = metaRows.find(d => d.name === stationName);
     if (!meta) return;
 
-    // Titel
+    // Titel aktualisieren
     side.titleEl.textContent = stationName;
 
-    // Karte
+    // Karte setzen
     const { lat, lon } = meta;
-    side.map.setView([+lat, +lon], MAP_ZOOM);
+    side.map.setView([+lat, +lon], MAP_ZOOM, { animate: false });
+    side.map.setZoom(MAP_ZOOM, { animate: false });
     if (side.marker) side.map.removeLayer(side.marker);
     if (side.circle) side.map.removeLayer(side.circle);
-    side.marker = L.marker([+lat, +lon]).addTo(side.map);
-    side.circle = L.circle([+lat, +lon], {
-        radius: MAP_RADIUS_M, color: "#3388ff", weight: 4, fill: false
-    }).addTo(side.map);
+    //side.marker = L.marker([+lat, +lon]).addTo(side.map);
+    side.circle = L.circle([+lat, +lon], { radius: MAP_RADIUS_M, color: "#9f9f9fff", weight: 4, fill: false }).addTo(side.map);
 
-    // Steckbrief: Oberflächen
+    // Oberflächen-Balken
     renderSurfaceBars(side.barsHost, meta);
 
-    // Steckbrief: Baumkronen
-    const canopyKey = firstExistingKey(meta, canopyKeys);
-    const canopyVal = percent01(+meta[canopyKey]);
-    const pct = Math.round(canopyVal * 100);
-    side.canopyFill.style.width = `${pct}%`;
-    side.canopyPct.textContent = `${pct} %`;
+    // Tree-/Baumkronen-Balken
+    const treeKey = firstExistingKey(meta, treeKeys);
+    const treeVal = percent01(+meta[treeKey]);
+    const pct = Math.round(treeVal * 100);
+    side.treeFill.style.width = `${pct}%`;
+    side.treePct.textContent = `${pct} %`;
 
     // Heatmap volle Breite
     side.heatSvg.dataset.values = JSON.stringify(heatmapData[stationName] || []);
@@ -276,12 +273,10 @@ function renderSide(side, stationName, metaRows, heatmapData, hotRows, stationTe
     const maxVal = hot[maxKey] != null ? +hot[maxKey] : null;
     const daysVal = hot[hotKey] != null ? +hot[hotKey] : null;
 
-    side.maxTempEl.textContent =
-        maxVal != null && !Number.isNaN(+maxVal) ? `${(+maxVal).toFixed(1)} °C` : "–";
-    side.hotDaysEl.textContent =
-        daysVal != null && !Number.isNaN(+daysVal) ? `${Math.round(+daysVal)}` : "–";
+    side.maxTempEl.textContent = maxVal != null && !Number.isNaN(+maxVal) ? `${(+maxVal).toFixed(1)} °C` : "–";
+    side.hotDaysEl.textContent = daysVal != null && !Number.isNaN(+daysVal) ? `${Math.round(+daysVal)}` : "–";
 
-    // Text aus Datei (falls vorhanden), sonst Fallback
+    // Text (falls vorhanden), sonst Auto-Text
     const t = stationTexts && (stationTexts[stationName] || stationTexts[slug(stationName)]);
     side.textEl.textContent = t ? String(t) : makeAutoText(meta, daysVal);
 }
@@ -293,7 +288,7 @@ function renderHeatFullWidth(side) {
 
     // verfügbare Breite ~ Cardbreite minus Padding
     const box = side.cardEl.getBoundingClientRect();
-    const width = Math.max(HEAT_MIN_W, Math.floor(box.width - 32)); // padding grob abziehen
+    const width = Math.max(HEAT_MIN_W, Math.floor(box.width - 32));
 
     side.heatSvg.setAttribute("width", width.toString());
     renderHeat(side.heatSvg, values);
@@ -311,32 +306,40 @@ function renderSurfaceBars(containerEl, meta) {
     ];
 
     groups.forEach(g => {
+        // Box für eine Gruppe (Rahmen/Hintergrund via .box)
         const box = document.createElement("div");
-        box.setAttribute("style", "border:1px solid #e5e7eb;border-radius:6px;padding:8px;margin:0;");
+        box.className = "box";
+
+        // Überschrift der Gruppe
         const gTitle = document.createElement("div");
+        gTitle.className = "smaller-title";
         gTitle.textContent = g.title;
-        gTitle.setAttribute("style", "font-size:13px;font-weight:700;margin-bottom:6px;");
         box.appendChild(gTitle);
 
+        // Einträge (Label – Balken – Prozent)
         g.items.forEach(item => {
-            const row = document.createElement("div");
-            row.setAttribute("style", "display:flex;align-items:center;gap:8px;margin-bottom:6px;");
+            const row = document.createElement("div");        // eine Balken-Zeile
+            row.className = "barrow";
 
-            // KEIN Farbfeld mehr vor dem Label
-            const lbl = document.createElement("div");
+            const lbl = document.createElement("div");        // Label links
+            lbl.className = "barlabel";
             lbl.textContent = item.label;
-            lbl.setAttribute("style", "font-size:13px;flex:1;");
 
-            const barOuter = document.createElement("div");
-            barOuter.setAttribute("style", "height:12px;width:180px;background:#eee;border-radius:9999px;overflow:hidden;");
-            const barInner = document.createElement("div");
+            const barOuter = document.createElement("div");   // Balken außen
+            barOuter.className = "barouter";
+
+            const barInner = document.createElement("div");   // Balken-Füllung
             const val = clamp0_100(+meta[item.key]);
-            barInner.setAttribute("style", `height:12px;width:${val}%;background:${item.color};border-radius:9999px;`);
+            barInner.className = "barvalue";
+            barInner.style.width = `${val}%`;
+            barInner.style.background = item.color;
             barOuter.appendChild(barInner);
 
-            const valTxt = document.createElement("div");
+            const valTxt = document.createElement("div");     // Prozentzahl rechts
             valTxt.textContent = `${Math.round(val)}%`;
-            valTxt.setAttribute("style", "font-size:12px;width:30px;text-align:right;");
+            valTxt.style.fontSize = "12px";
+            valTxt.style.width = "30px";
+            valTxt.style.textAlign = "right";
 
             row.append(lbl, barOuter, valTxt);
             box.appendChild(row);
@@ -349,7 +352,10 @@ function renderSurfaceBars(containerEl, meta) {
 function renderHeat(svgNode, values) {
     const width = +svgNode.getAttribute("width");
     const height = +svgNode.getAttribute("height") || HEAT_H;
-    const plotH = height - 14; // Platz für Zahlen
+
+    const labelPad = 20;               // reservierter Bereich unten (px)
+    const labelOffset = 6;                // kleiner Abstand von oben in diesem Bereich
+    const plotH = Math.max(0, height - labelPad);
     const cellW = width / 24;
 
     const color = d3.scaleLinear()
@@ -359,7 +365,7 @@ function renderHeat(svgNode, values) {
     const svg = d3.select(svgNode);
     svg.selectAll("*").remove();
 
-    // Zellen
+    // Heatmap-Zellen
     svg.append("g")
         .selectAll("rect")
         .data(values)
@@ -370,15 +376,16 @@ function renderHeat(svgNode, values) {
         .attr("height", plotH)
         .attr("fill", d => color(d));
 
-    // Stunden 1..24
+    // Stunden 1..24 — korrekt im reservierten Bereich platzieren
     svg.append("g")
+        .attr("transform", `translate(0, ${plotH + labelOffset})`)
         .selectAll("text")
         .data(values)
         .join("text")
         .attr("x", (_, i) => i * cellW + cellW / 2)
-        .attr("y", height - 2)
+        .attr("y", 0)                       // y=0, weil wir die Gruppe verschoben haben
         .attr("text-anchor", "middle")
-        .attr("font-size", "10px")
+        .attr("class", "heat-hour-label")
         .text((_, i) => i + 1);
 }
 
@@ -386,14 +393,19 @@ function renderHeat(svgNode, values) {
 // Utilities
 // =====================
 function mkKpiBox(title) {
+    // KPI-Box (Rahmen/Hintergrund via .kpi)
     const wrap = document.createElement("div");
-    wrap.setAttribute("style", "border:1px solid #ddd;border-radius:6px;padding:10px;text-align:center;background:#fff;");
+    wrap.className = "kpi";
+
+    // KPI-Titel (gleiche Typo wie Heatmap-Titel)
     const t = document.createElement("div");
+    t.className = "heat-title";
     t.textContent = title;
-    // gleich groß & fett wie Heatmap-Frage
-    t.setAttribute("style", "font-size:16px;font-weight:800;margin-bottom:6px;");
+
+    // KPI-Wert (Farbe via CSS-Variable --kpi-color)
     const v = document.createElement("div");
-    v.setAttribute("style", `font-size:22px;font-weight:800;color:${KPI_COLOR};user-select:none;`);
+    v.className = "kpi__value";
+
     wrap.append(t, v);
     return { wrap, value: v };
 }
@@ -411,13 +423,14 @@ function percent01(v) {
     return v > 1 ? clamp0_100(v) / 100 : Math.max(0, Math.min(1, v));
 }
 function slug(s) { return String(s).toLowerCase().normalize("NFKD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, "-"); }
+
 function makeAutoText(meta, hotDays) {
     // versiegelt = Gebäude + Asphalt (Kies unversiegelt)
     const sealed = ["gebaeude_%", "asphalt_%"].map(k => +meta[k] || 0).reduce((a, b) => a + b, 0);
-    const canopy = Math.round(clamp0_100(+meta[firstExistingKey(meta, canopyKeys)] || 0));
+    const tree = Math.round(clamp0_100(+meta[firstExistingKey(meta, treeKeys)] || 0));
     const parts = [];
     parts.push(`Im 50-m-Umkreis sind etwa ${Math.round(clamp0_100(sealed))} % der Fläche versiegelt.`);
-    parts.push(`Baumkronenanteil ca. ${canopy} %.`);
+    parts.push(`Baumkronenanteil ca. ${tree} %.`);
     if (hotDays != null) parts.push(`2024 wurden hier ungefähr ${Math.round(+hotDays)} heiße Tage gezählt.`);
     return parts.join(" ");
 }

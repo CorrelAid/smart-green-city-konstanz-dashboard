@@ -4,6 +4,8 @@ sidebar: true
 toc:
   label: 'Kapitel'
 ---
+<link rel="stylesheet" href="charts/chart3_style.css">
+
 <!-- mit theme: dashboard ist alles im darkmode, wenn die Voreinstellung des Betriebssystems/Browsers so ist
     mit "wide" wird die Sidebar kleiner -->
 

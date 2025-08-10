@@ -1,0 +1,207 @@
+:root {
+    --box-bg: #fff;
+    /* Hintergrundfarbe für Boxen*/
+    --box-border-color: #cdccccff;
+    --box-border-w: 2px;
+    /*Rahmenbreite*/
+    --box-radius: 6px;
+    /*abgerundete Ecken*/
+    --box-pad: 10px;
+    /*Innenabstand in Boxen*/
+
+    --kpi-color: #8B0000;
+    /* Schriftfarbe Key Performance Indicators*/
+    --muted: #6b7280;
+    /* kleiner Erklärtext über Heatmap*/
+}
+
+
+/* runder Karten-Container */
+.map-round {
+    width: 350px;
+    /* wird im JS ohnehin gesetzt – hier nur Default */
+    height: 350px;
+    /* dito */
+    border-radius: 50%;
+    overflow: hidden;
+    margin: 0 auto;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, .2);
+
+    /* optional robusteres Clipping auf manchen Browsern */
+    clip-path: circle(50% at 50% 50%);
+    /* für ältere WebKit-Browser:
+  -webkit-mask-image: radial-gradient(circle, #000 99.9%, transparent 100%);
+  */
+}
+
+/* =====================
+   Generische Layout-Bausteine
+   ===================== */
+
+/* Haupt-Container einer Karte/Station */
+.card {
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+
+/* Zweispaltiges Grid-Layout (z. B. Karte links, Daten rechts) */
+.grid-2 {
+    display: grid;
+    column-gap: 20px;
+    align-items: start;
+}
+
+/* Standard-Box mit Rahmen, abgerundeten Ecken & Padding */
+.box {
+    background: var(--box-bg);
+    border: var(--box-border-w) solid var(--box-border-color);
+    border-radius: var(--box-radius);
+    padding: var(--box-pad);
+}
+
+/* Hauptüberschrift in einer Karte */
+.station_name {
+    text-align: center;
+    font-size: 28px;
+    font-weight: 800;
+    color: #00469B;
+    margin: 4px 0 2px 0;
+}
+
+/* Kleine Abschnittsüberschrift (z. B. „Oberflächenbeschaffenheit…“) */
+.small-title {
+    font-size: 18px;
+    font-weight: 800;
+    margin-top: 8px;
+    /* mehr Abstand nach oben */
+    margin-bottom: -3px;
+
+}
+
+/* Kleine Abschnittsüberschrift (z. B. „Versiegelte Flächen“) */
+.smaller-title {
+    font-size: 16px;
+    font-weight: 800;
+    margin-bottom: 6px;
+
+}
+
+/* =====================
+   KPI-Anzeige
+   ===================== */
+
+/* KPI-Box (z. B. Maximaltemperatur) */
+.kpi {
+    border: 1px solid #ddd;
+    border-radius: var(--box-radius);
+    padding: var(--box-pad);
+    text-align: center;
+    background: #fff;
+}
+
+
+/* Wert innerhalb einer KPI-Box */
+.kpi__value {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--kpi-color);
+    user-select: none;
+    /* verhindert Text-Markieren */
+}
+
+
+
+/* =====================
+   Balkendiagramm-Liste
+   ===================== */
+
+/* Container für mehrere Balkenreihen */
+.barlist {
+    display: grid;
+    grid-auto-rows: min-content;
+    row-gap: 8px;
+}
+
+/* Eine einzelne Balkenreihe */
+.barrow {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 6px;
+}
+
+/* Hintergrund der Balkenanzeige */
+.barouter {
+    height: 12px;
+    width: 180px;
+    background: #eee;
+    border-radius: 9999px;
+    overflow: hidden;
+}
+
+/* Gefüllter Bereich eines Balkens */
+.barvalue {
+    height: 12px;
+    border-radius: 9999px;
+}
+
+.barlabel {
+    font-size: 15px;
+    flex: 1;
+}
+
+/* =====================
+   Heatmap-Bereich
+   ===================== */
+
+/* Gesamtcontainer für Heatmap & Beschriftungen */
+.heat-block {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* Titel der Heatmap */
+.heat-title {
+    font-size: 18px;
+    font-weight: 800;
+    color: #111;
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.heat-explain {
+    font-size: 15px;
+    color: var(--muted);
+    margin-top: 0px;
+    margin-bottom: 6px;
+}
+
+.heat-bottom {
+    text-align: center;
+    font-size: 16px;
+    font-weight: 700;
+    margin-top: 3px;
+    margin-bottom: 10px;
+}
+
+
+.heat-hour-label {
+    font-size: 14px;
+    /*Stunden Anzeige*/
+    dominant-baseline: hanging;
+    /* y ist Oberkante des Textes */
+}
+
+
+
+.station-text {
+    font-size: 16px;
+    /* z.B. 16–18px für bessere Lesbarkeit */
+    line-height: 1.4;
+}
